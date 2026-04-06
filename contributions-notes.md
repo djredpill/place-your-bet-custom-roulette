@@ -43,3 +43,12 @@
 13. "No more bets" dealer voice audio generation
 14. Traffic light countdown timer colors
 15. BetKeypad reusable component (implementing user's number pad concept)
+25. Streak monitor concept — adapted pattern alerts from Project Zero for side bet opportunities
+26. Adjustable streak threshold (default 7, range 5-10) — user wanted flexibility
+27. Noted that side bets don't conflict with strategy here (no protocol to protect like in Project Zero)
+28. Haptic feedback on spin results — vibration for mobile/tablet use
+
+### Developer Contributions (continued)
+16. Streak detection engine (color, parity, dozen, column, high/low patterns)
+17. StreakMonitor UI component with dismissable alerts, settings panel, gold accent design
+18. triggerHaptic function with different vibration patterns for win/loss/spin/streak

@@ -9,7 +9,8 @@ import RouletteWheel from "./RouletteWheel";
 import NumberStrip from "./NumberStrip";
 import { useGame } from "@/contexts/GameContext";
 import { generateRandomNumber, getNumberColor, calculateWin, type Strategy, type SpinResult } from "@/lib/roulette-data";
-import { playBallSpin, playWinSound, playLossSound } from "@/lib/sounds";
+import { playBallSpin, playWinSound, playLossSound, triggerHaptic } from "@/lib/sounds";
+import StreakMonitor from "./StreakMonitor";
 import type { WatchModeConfig } from "./WatchModeSetup";
 
 /*
@@ -506,6 +507,9 @@ export default function WatchModeEngine({
               <BankrollChart data={stats.bankrollHistory} startingBankroll={startingBankroll} />
             </div>
           )}
+
+          {/* Streak Monitor — built-in pattern detection */}
+          <StreakMonitor externalHistory={recentResults} />
 
           {/* Number Strip — casino marquee display */}
           <NumberStrip history={recentResults} />

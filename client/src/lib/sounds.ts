@@ -238,3 +238,22 @@ export function playChipPlace(): void {
   noise.start(now);
   noise.stop(now + 0.06);
 }
+
+// Haptic feedback — vibrate on spin result (mobile/tablet)
+export function triggerHaptic(type: "spin" | "win" | "loss" | "streak" = "spin"): void {
+  if (!navigator.vibrate) return;
+  switch (type) {
+    case "spin":
+      navigator.vibrate(50);
+      break;
+    case "win":
+      navigator.vibrate([50, 30, 80]);
+      break;
+    case "loss":
+      navigator.vibrate(100);
+      break;
+    case "streak":
+      navigator.vibrate([100, 50, 100]);
+      break;
+  }
+}

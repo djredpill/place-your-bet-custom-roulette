@@ -13,7 +13,8 @@ import PauseOverlay from "@/components/PauseOverlay";
 import WatchModeSetup, { type WatchModeConfig } from "@/components/WatchModeSetup";
 import WatchModeEngine from "@/components/WatchModeEngine";
 import { generateRandomNumber, type Strategy } from "@/lib/roulette-data";
-import { initSounds, playBallSpin, playTick, playNoMoreBets, playWinSound, playLossSound, playChipPlace } from "@/lib/sounds";
+import { initSounds, playBallSpin, playTick, playNoMoreBets, playWinSound, playLossSound, playChipPlace, triggerHaptic } from "@/lib/sounds";
+import StreakMonitor from "@/components/StreakMonitor";
 import { motion } from "framer-motion";
 import {
   Info, RotateCcw, Trash2, DollarSign, Home,
@@ -134,6 +135,7 @@ function GameContent() {
     setTimeout(() => {
       const result = spin(number);
       setIsSpinning(false);
+      triggerHaptic(result.netResult > 0 ? "win" : result.netResult < 0 ? "loss" : "spin");
       if (soundEnabled) {
         if (result.netResult > 0) playWinSound();
         else if (result.netResult < 0) playLossSound();
@@ -169,6 +171,7 @@ function GameContent() {
     setTimeout(() => {
       const result = spin(num);
       setIsSpinning(false);
+      triggerHaptic(result.netResult > 0 ? "win" : result.netResult < 0 ? "loss" : "spin");
       if (soundEnabled) {
         if (result.netResult > 0) playWinSound();
         else if (result.netResult < 0) playLossSound();
@@ -439,6 +442,9 @@ function GameContent() {
 
           {/* History */}
           <SpinHistory />
+
+          {/* Streak Monitor — built-in pattern detection */}
+          <StreakMonitor />
 
           {/* Number Strip — casino marquee display */}
           <NumberStrip history={history} />
