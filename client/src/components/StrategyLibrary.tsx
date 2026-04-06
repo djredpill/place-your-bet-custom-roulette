@@ -2,13 +2,14 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { STRATEGIES, RATING_CATEGORIES, type Strategy } from "@/lib/roulette-data";
 import { useGame } from "@/contexts/GameContext";
-import { X, ExternalLink, Play, Star, ChevronRight, BookOpen, Eye } from "lucide-react";
+import { X, ExternalLink, Play, Star, ChevronRight, BookOpen, Eye, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 
 interface StrategyLibraryProps {
   isOpen: boolean;
   onClose: () => void;
   onWatchMode?: (strategy: Strategy) => void;
+  onCompare?: () => void;
 }
 
 function RatingBar({ value, max = 20 }: { value: number; max?: number }) {
@@ -175,7 +176,7 @@ function StrategyDetail({ strategy, onLoad, onWatch, onClose }: { strategy: Stra
   );
 }
 
-export default function StrategyLibrary({ isOpen, onClose, onWatchMode }: StrategyLibraryProps) {
+export default function StrategyLibrary({ isOpen, onClose, onWatchMode, onCompare }: StrategyLibraryProps) {
   const { loadStrategy } = useGame();
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
 
@@ -227,6 +228,20 @@ export default function StrategyLibrary({ isOpen, onClose, onWatchMode }: Strate
                       exit={{ opacity: 0 }}
                       className="p-2 space-y-1"
                     >
+                      {/* Compare button */}
+                      {onCompare && (
+                        <button
+                          onClick={() => { onClose(); onCompare(); }}
+                          className="w-full text-left bg-[#D4AF37]/5 hover:bg-[#D4AF37]/10 border border-[#D4AF37]/20 hover:border-[#D4AF37]/40 rounded-lg p-3 transition-all group mb-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <BarChart3 size={16} className="text-[#D4AF37]" />
+                            <span className="text-[#D4AF37] font-display text-xs tracking-wider">COMPARE STRATEGIES</span>
+                          </div>
+                          <p className="text-[#C0C0C0]/50 font-body text-[10px] mt-1 ml-6">Run 2 strategies side-by-side with the same numbers</p>
+                        </button>
+                      )}
+
                       {STRATEGIES.map(strategy => (
                         <button
                           key={strategy.id}

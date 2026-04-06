@@ -64,3 +64,18 @@
 20. Side bet $5 quick-action button in streak alerts with chip place sound
 21. SessionExport component — formatted ASCII text report with copy-to-clipboard and download .txt
 22. Layered UI architecture — features tucked behind icons/toggles, core experience stays clean
+
+### Final Beta Build Additions
+
+#### User Contributions
+33. App icon concept — "just making it a stack of chips"
+34. App Store / Google Play distribution goal
+35. GitHub repo push request
+
+#### Developer Contributions
+23. PlayModeGuide component — step-by-step strategy prompts during manual play, auto-places bets
+24. StrategyComparison component — run 2 strategies side-by-side with same conditions, compare results with charts
+25. Adjustable side bet amount in streak alerts ($5/$10/$25/$50/$100)
+26. App icon generation — premium stack of casino chips (gold/green/black on dark navy)
+27. Favicon and apple-touch-icon setup
+28. PWA meta tags (apple-mobile-web-app-capable, theme-color)

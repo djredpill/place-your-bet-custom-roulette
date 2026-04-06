@@ -16,7 +16,9 @@ import { generateRandomNumber, type Strategy } from "@/lib/roulette-data";
 import { initSounds, playBallSpin, playTick, playNoMoreBets, playWinSound, playLossSound, playChipPlace, triggerHaptic } from "@/lib/sounds";
 import StreakMonitor from "@/components/StreakMonitor";
 import HotColdTracker from "@/components/HotColdTracker";
+import PlayModeGuide from "@/components/PlayModeGuide";
 import SessionExport from "@/components/SessionExport";
+import StrategyComparison from "@/components/StrategyComparison";
 import { motion } from "framer-motion";
 import {
   Info, RotateCcw, Trash2, DollarSign, Home,
@@ -53,6 +55,7 @@ function GameContent() {
   const [manualNumber, setManualNumber] = useState("");
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
   const [casinoCountdown, setCasinoCountdown] = useState<number | null>(null);
   const casinoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const soundInitRef = useRef(false);
@@ -326,6 +329,9 @@ function GameContent() {
         </div>
       )}
 
+      {/* Play Mode Guide — step-by-step strategy coaching */}
+      <PlayModeGuide />
+
       {/* Bankroll display */}
       <div className="bg-[#1a1a2e]/50 px-3 py-2 border-b border-white/5">
         <div className="flex items-center justify-between max-w-[720px] mx-auto">
@@ -473,9 +479,11 @@ function GameContent() {
         isOpen={showStrategies}
         onClose={() => setShowStrategies(false)}
         onWatchMode={handleWatchModeRequest}
+        onCompare={() => setShowComparison(true)}
       />
       <SessionSetup isOpen={showSessionSetup} onClose={() => setShowSessionSetup(false)} />
       <SessionExport isOpen={showExport} onClose={() => setShowExport(false)} />
+      <StrategyComparison isOpen={showComparison} onClose={() => setShowComparison(false)} />
 
       {/* Watch Mode Setup */}
       {watchModeStrategy && (

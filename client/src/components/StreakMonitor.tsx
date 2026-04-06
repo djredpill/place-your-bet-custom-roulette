@@ -22,6 +22,7 @@ interface StreakMonitorProps {
 export default function StreakMonitor({ externalHistory }: StreakMonitorProps) {
   const { history: gameHistory, addBet, soundEnabled } = useGame();
   const [threshold, setThreshold] = useState(7);
+  const [sideBetAmount, setSideBetAmount] = useState(5);
   const [showSettings, setShowSettings] = useState(false);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
   const [activeAlerts, setActiveAlerts] = useState<StreakAlert[]>([]);
@@ -54,7 +55,7 @@ export default function StreakMonitor({ externalHistory }: StreakMonitorProps) {
     }
   }, [activeAlerts.length]);
 
-  // Side bet quick-action: places a $5 counter-bet
+  // Side bet quick-action: places a counter-bet at user-chosen amount
   const handleSideBet = useCallback((alert: StreakAlert) => {
     const betType = alert.suggestedBetType;
     let type: BetType;
@@ -81,11 +82,11 @@ export default function StreakMonitor({ externalHistory }: StreakMonitorProps) {
       return;
     }
 
-    addBet({ type, numbers, amount: 5, label: `Side: ${label}` });
+    addBet({ type, numbers, amount: sideBetAmount, label: `Side: ${label}` });
     if (soundEnabled) playChipPlace();
-    toast.success(`Side bet placed: $5 on ${label}`);
+    toast.success(`Side bet placed: $${sideBetAmount} on ${label}`);
     dismissAlert(alert);
-  }, [addBet, soundEnabled, dismissAlert]);
+  }, [addBet, soundEnabled, dismissAlert, sideBetAmount]);
 
   return (
     <>
@@ -151,6 +152,31 @@ export default function StreakMonitor({ externalHistory }: StreakMonitorProps) {
               <p className="text-[#C0C0C0]/30 font-body text-[9px] mt-2 text-center">
                 Monitors: Color &bull; Odd/Even &bull; Dozen &bull; Column &bull; High/Low
               </p>
+
+              {/* Side bet amount */}
+              {!externalHistory && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <span className="text-[#C0C0C0] font-body text-xs">Side Bet Amount</span>
+                  <p className="text-[#C0C0C0]/50 font-body text-[10px] mb-2">
+                    Amount placed when using the quick side bet button
+                  </p>
+                  <div className="flex gap-1.5">
+                    {[5, 10, 15, 25, 50, 100].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setSideBetAmount(n)}
+                        className={`flex-1 py-1.5 rounded text-xs font-numbers font-bold transition-colors ${
+                          sideBetAmount === n
+                            ? "bg-[#35654D] text-white"
+                            : "bg-white/5 text-[#C0C0C0]/60 hover:bg-white/10"
+                        }`}
+                      >
+                        ${n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -198,7 +224,7 @@ export default function StreakMonitor({ externalHistory }: StreakMonitorProps) {
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 border border-[#D4AF37]/40 rounded text-[#D4AF37] font-body text-xs font-semibold transition-colors"
                   >
                     <DollarSign size={12} />
-                    Side Bet $5
+                    Side Bet ${sideBetAmount}
                   </button>
                   <span className="text-[#C0C0C0]/30 font-body text-[9px]">
                     Quick counter-bet
