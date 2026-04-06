@@ -1,0 +1,210 @@
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Download, X, Copy, Check, FileText } from "lucide-react";
+import { useGame } from "@/contexts/GameContext";
+import { getNumberColor } from "@/lib/roulette-data";
+import { toast } from "sonner";
+
+/*
+ * SessionExport — save spin history and stats as a shareable text summary
+ * Generates a formatted text report of the session
+ * Copy to clipboard or download as .txt file
+ */
+
+interface SessionExportProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function SessionExport({ isOpen, onClose }: SessionExportProps) {
+  const { history, bankroll, activeStrategy, tableType, sessionSettings } = useGame();
+  const [copied, setCopied] = useState(false);
+
+  const report = useMemo(() => {
+    if (history.length === 0) return "";
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+    });
+    const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+    // Calculate stats
+    const totalBet = history.reduce((s, h) => s + h.totalBet, 0);
+    const totalWin = history.reduce((s, h) => s + h.totalWin, 0);
+    const netProfit = totalWin - totalBet;
+    const wins = history.filter(h => h.netResult > 0).length;
+    const losses = history.filter(h => h.netResult < 0).length;
+    const pushes = history.filter(h => h.netResult === 0).length;
+    const winRate = ((wins / history.length) * 100).toFixed(1);
+
+    // Number frequency
+    const freq: Record<string, number> = {};
+    history.forEach(h => {
+      const key = String(h.number);
+      freq[key] = (freq[key] || 0) + 1;
+    });
+    const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+    const hotNums = sorted.slice(0, 5).map(([n, c]) => `${n}(${c}x)`).join(", ");
+    const coldNums = sorted.slice(-5).reverse().map(([n, c]) => `${n}(${c}x)`).join(", ");
+
+    // Color distribution
+    const reds = history.filter(h => getNumberColor(h.number) === "red").length;
+    const blacks = history.filter(h => getNumberColor(h.number) === "black").length;
+    const greens = history.filter(h => getNumberColor(h.number) === "green").length;
+
+    // Streaks
+    let maxWinStreak = 0, maxLossStreak = 0, curWin = 0, curLoss = 0;
+    history.forEach(h => {
+      if (h.netResult > 0) { curWin++; curLoss = 0; maxWinStreak = Math.max(maxWinStreak, curWin); }
+      else if (h.netResult < 0) { curLoss++; curWin = 0; maxLossStreak = Math.max(maxLossStreak, curLoss); }
+      else { curWin = 0; curLoss = 0; }
+    });
+
+    // Biggest single win/loss
+    const bigWin = Math.max(0, ...history.map(h => h.netResult));
+    const bigLoss = Math.min(0, ...history.map(h => h.netResult));
+
+    // Spin sequence
+    const spinSeq = history.slice().reverse().map((h, i) => {
+      const color = getNumberColor(h.number);
+      const colorTag = color === "red" ? "R" : color === "black" ? "B" : "G";
+      const result = h.netResult > 0 ? `+$${h.netResult}` : h.netResult < 0 ? `-$${Math.abs(h.netResult)}` : "$0";
+      return `  ${String(i + 1).padStart(3)}. ${String(h.number).padStart(2)} [${colorTag}] ${result}`;
+    }).join("\n");
+
+    return `╔══════════════════════════════════════════════╗
+║       PLACE YOUR BET — SESSION REPORT        ║
+╚══════════════════════════════════════════════╝
+
+Date: ${dateStr}
+Time: ${timeStr}
+Table: ${tableType === "american" ? "American (0, 00)" : "European (0)"}${activeStrategy ? `\nStrategy: ${activeStrategy.name}` : ""}
+
+────────────────────────────────────────────────
+  SESSION SUMMARY
+────────────────────────────────────────────────
+  Total Spins:     ${history.length}
+  Final Bankroll:  $${bankroll.toLocaleString()}
+  Total Wagered:   $${totalBet.toLocaleString()}
+  Total Won:       $${totalWin.toLocaleString()}
+  Net Profit:      ${netProfit >= 0 ? "+$" + netProfit.toLocaleString() : "-$" + Math.abs(netProfit).toLocaleString()}
+
+────────────────────────────────────────────────
+  WIN/LOSS BREAKDOWN
+────────────────────────────────────────────────
+  Wins:   ${wins} (${winRate}%)
+  Losses: ${losses}
+  Pushes: ${pushes}
+  Best Win Streak:  ${maxWinStreak}
+  Worst Loss Streak: ${maxLossStreak}
+  Biggest Win:  +$${bigWin}
+  Biggest Loss: -$${Math.abs(bigLoss)}
+
+────────────────────────────────────────────────
+  COLOR DISTRIBUTION
+────────────────────────────────────────────────
+  Red:   ${reds} (${((reds / history.length) * 100).toFixed(1)}%)
+  Black: ${blacks} (${((blacks / history.length) * 100).toFixed(1)}%)
+  Green: ${greens} (${((greens / history.length) * 100).toFixed(1)}%)
+
+────────────────────────────────────────────────
+  HOT & COLD NUMBERS
+────────────────────────────────────────────────
+  Hot: ${hotNums}
+  Cold: ${coldNums}
+
+────────────────────────────────────────────────
+  SPIN HISTORY
+────────────────────────────────────────────────
+${spinSeq}
+
+────────────────────────────────────────────────
+  Generated by Place Your Bet — Custom Roulette
+────────────────────────────────────────────────`;
+  }, [history, bankroll, activeStrategy, tableType]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(report);
+      setCopied(true);
+      toast.success("Report copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  const handleDownload = () => {
+    const now = new Date();
+    const filename = `pyb-session-${now.toISOString().slice(0, 10)}-${now.getHours()}${String(now.getMinutes()).padStart(2, "0")}.txt`;
+    const blob = new Blob([report], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Downloaded ${filename}`);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/70 z-50" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="fixed inset-4 z-50 bg-[#0d0d1a] border-2 border-[#D4AF37]/30 rounded-xl flex flex-col overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#D4AF37]/20 bg-[#1a1a2e]">
+          <div className="flex items-center gap-2">
+            <FileText size={18} className="text-[#D4AF37]" />
+            <h2 className="text-[#D4AF37] font-display text-lg tracking-wider">SESSION REPORT</h2>
+          </div>
+          <button onClick={onClose} className="text-[#C0C0C0]/40 hover:text-[#C0C0C0]">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Report content */}
+        <div className="flex-1 overflow-auto p-4">
+          {history.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <FileText size={48} className="text-[#C0C0C0]/20 mb-3" />
+              <p className="text-[#C0C0C0]/40 font-body text-sm">No spins recorded yet</p>
+              <p className="text-[#C0C0C0]/20 font-body text-xs mt-1">Play some spins first to generate a report</p>
+            </div>
+          ) : (
+            <pre className="text-[#C0C0C0] font-numbers text-[11px] leading-relaxed whitespace-pre-wrap">
+              {report}
+            </pre>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        {history.length > 0 && (
+          <div className="flex gap-2 px-4 py-3 border-t border-white/10 bg-[#1a1a2e]">
+            <button
+              onClick={handleCopy}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#2a2a3e] hover:bg-[#3a3a4e] text-white font-body text-sm rounded-lg border border-white/10 transition-colors"
+            >
+              {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
+              {copied ? "Copied!" : "Copy to Clipboard"}
+            </button>
+            <button
+              onClick={handleDownload}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-[#1a1a2e] font-body text-sm font-bold rounded-lg transition-colors"
+            >
+              <Download size={16} />
+              Download .txt
+            </button>
+          </div>
+        )}
+      </motion.div>
+    </>
+  );
+}

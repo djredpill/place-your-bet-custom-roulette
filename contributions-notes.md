@@ -52,3 +52,15 @@
 16. Streak detection engine (color, parity, dozen, column, high/low patterns)
 17. StreakMonitor UI component with dismissable alerts, settings panel, gold accent design
 18. triggerHaptic function with different vibration patterns for win/loss/spin/streak
+
+### Additional User Contributions
+29. Hot/cold number tracker — wanted to see which numbers are running hot or cold
+30. Side bet quick-action from streak alerts — one-tap counter-bet without leaving strategy
+31. Session export — save session as shareable summary
+32. "Not too complicated" design philosophy — all features layered, not cluttered; core stays simple
+
+### Additional Developer Contributions
+19. HotColdTracker component — top 5 hot/top 5 cold with color-coded circles, only shows after 10+ spins
+20. Side bet $5 quick-action button in streak alerts with chip place sound
+21. SessionExport component — formatted ASCII text report with copy-to-clipboard and download .txt
+22. Layered UI architecture — features tucked behind icons/toggles, core experience stays clean

@@ -15,10 +15,12 @@ import WatchModeEngine from "@/components/WatchModeEngine";
 import { generateRandomNumber, type Strategy } from "@/lib/roulette-data";
 import { initSounds, playBallSpin, playTick, playNoMoreBets, playWinSound, playLossSound, playChipPlace, triggerHaptic } from "@/lib/sounds";
 import StreakMonitor from "@/components/StreakMonitor";
+import HotColdTracker from "@/components/HotColdTracker";
+import SessionExport from "@/components/SessionExport";
 import { motion } from "framer-motion";
 import {
   Info, RotateCcw, Trash2, DollarSign, Home,
-  Volume2, VolumeX, BookOpen, Settings2, Undo2,
+  Volume2, VolumeX, BookOpen, Settings2, Undo2, FileText,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -50,6 +52,7 @@ function GameContent() {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualNumber, setManualNumber] = useState("");
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [casinoCountdown, setCasinoCountdown] = useState<number | null>(null);
   const casinoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const soundInitRef = useRef(false);
@@ -291,6 +294,13 @@ function GameContent() {
             >
               <Settings2 size={18} />
             </button>
+            <button
+              onClick={() => setShowExport(true)}
+              className="text-[#D4AF37]/60 hover:text-[#D4AF37] transition-colors"
+              title="Export Session"
+            >
+              <FileText size={18} />
+            </button>
           </div>
         </div>
       </div>
@@ -446,6 +456,9 @@ function GameContent() {
           {/* Streak Monitor — built-in pattern detection */}
           <StreakMonitor />
 
+          {/* Hot/Cold Number Tracker */}
+          <HotColdTracker />
+
           {/* Number Strip — casino marquee display */}
           <NumberStrip history={history} />
 
@@ -462,6 +475,7 @@ function GameContent() {
         onWatchMode={handleWatchModeRequest}
       />
       <SessionSetup isOpen={showSessionSetup} onClose={() => setShowSessionSetup(false)} />
+      <SessionExport isOpen={showExport} onClose={() => setShowExport(false)} />
 
       {/* Watch Mode Setup */}
       {watchModeStrategy && (

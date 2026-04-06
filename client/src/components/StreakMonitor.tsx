@@ -1,23 +1,26 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, Settings, X, TrendingUp, Zap } from "lucide-react";
+import { AlertTriangle, Settings, X, Zap, DollarSign } from "lucide-react";
 import { useGame } from "@/contexts/GameContext";
 import { detectStreaks, type StreakAlert } from "@/lib/streak-detector";
+import { getOutsideBetNumbers, type BetType } from "@/lib/roulette-data";
+import { playChipPlace } from "@/lib/sounds";
+import { toast } from "sonner";
 
 /*
  * StreakMonitor — Built-in pattern monitoring system
  * Watches spin history for streaks (color, parity, dozen, column, high/low)
  * Adjustable threshold: 5-10, default 7
- * Non-blocking alerts — informational only, player decides what to do
+ * Non-blocking alerts with SIDE BET quick-action button
+ * Side bet places a $5 counter-bet on the opposite outcome
  */
 
 interface StreakMonitorProps {
-  /** Override history for Watch Mode (uses GameContext history by default) */
   externalHistory?: { number: number | string; timestamp: number }[];
 }
 
 export default function StreakMonitor({ externalHistory }: StreakMonitorProps) {
-  const { history: gameHistory } = useGame();
+  const { history: gameHistory, addBet, soundEnabled } = useGame();
   const [threshold, setThreshold] = useState(7);
   const [showSettings, setShowSettings] = useState(false);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
@@ -25,12 +28,9 @@ export default function StreakMonitor({ externalHistory }: StreakMonitorProps) {
 
   const history = externalHistory || gameHistory;
 
-  // Run streak detection whenever history changes
   useEffect(() => {
     const alerts = detectStreaks(history, threshold);
-    // Only show alerts that haven't been dismissed
     const newAlerts = alerts.filter(a => {
-      // Create a stable key based on type+value (not timestamp)
       const key = `${a.type}-${a.value}`;
       return !dismissedAlerts.has(key);
     });
@@ -42,23 +42,54 @@ export default function StreakMonitor({ externalHistory }: StreakMonitorProps) {
     setDismissedAlerts(prev => { const next = new Set(prev); next.add(key); return next; });
   }, []);
 
-  // Reset dismissed alerts when history is cleared
   useEffect(() => {
     if (history.length === 0) {
       setDismissedAlerts(new Set());
     }
   }, [history.length]);
 
-  // Haptic feedback when new alert appears
   useEffect(() => {
     if (activeAlerts.length > 0 && navigator.vibrate) {
       navigator.vibrate([100, 50, 100]);
     }
   }, [activeAlerts.length]);
 
+  // Side bet quick-action: places a $5 counter-bet
+  const handleSideBet = useCallback((alert: StreakAlert) => {
+    const betType = alert.suggestedBetType;
+    let type: BetType;
+    let numbers: (number | string)[];
+    let label: string;
+
+    // Parse the suggested bet type
+    if (betType === "red" || betType === "black" || betType === "odd" || betType === "even" || betType === "high" || betType === "low") {
+      type = betType as BetType;
+      numbers = getOutsideBetNumbers(type);
+      label = betType.toUpperCase();
+    } else if (betType.startsWith("dozen-")) {
+      type = "dozen";
+      const variant = parseInt(betType.split("-")[1]);
+      numbers = getOutsideBetNumbers("dozen", variant);
+      const dozenLabels: Record<number, string> = { 1: "1st 12", 2: "2nd 12", 3: "3rd 12" };
+      label = dozenLabels[variant] || "Dozen";
+    } else if (betType.startsWith("column-")) {
+      type = "column";
+      const variant = parseInt(betType.split("-")[1]);
+      numbers = getOutsideBetNumbers("column", variant);
+      label = `Column ${variant}`;
+    } else {
+      return;
+    }
+
+    addBet({ type, numbers, amount: 5, label: `Side: ${label}` });
+    if (soundEnabled) playChipPlace();
+    toast.success(`Side bet placed: $5 on ${label}`);
+    dismissAlert(alert);
+  }, [addBet, soundEnabled, dismissAlert]);
+
   return (
     <>
-      {/* Streak Monitor indicator — always visible */}
+      {/* Streak Monitor indicator */}
       <div className="flex items-center justify-between px-4 py-1">
         <div className="flex items-center gap-1.5">
           <Zap size={12} className={activeAlerts.length > 0 ? "text-[#D4AF37] animate-pulse" : "text-[#C0C0C0]/30"} />
@@ -125,7 +156,7 @@ export default function StreakMonitor({ externalHistory }: StreakMonitorProps) {
         )}
       </AnimatePresence>
 
-      {/* Active streak alerts */}
+      {/* Active streak alerts with side bet button */}
       <AnimatePresence>
         {activeAlerts.map(alert => (
           <motion.div
@@ -136,27 +167,44 @@ export default function StreakMonitor({ externalHistory }: StreakMonitorProps) {
             transition={{ duration: 0.3 }}
             className="px-4 mb-1"
           >
-            <div className="bg-gradient-to-r from-[#D4AF37]/15 to-[#D4AF37]/5 border border-[#D4AF37]/30 rounded-lg p-2.5 flex items-start gap-2">
-              <AlertTriangle size={16} className="text-[#D4AF37] flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#D4AF37] font-display text-xs tracking-wider">
-                    {alert.label} STREAK
-                  </span>
-                  <span className="text-[#C0C0C0]/40 font-body text-[9px]">
-                    {alert.count} in a row
+            <div className="bg-gradient-to-r from-[#D4AF37]/15 to-[#D4AF37]/5 border border-[#D4AF37]/30 rounded-lg p-2.5">
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={16} className="text-[#D4AF37] flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#D4AF37] font-display text-xs tracking-wider">
+                      {alert.label} STREAK
+                    </span>
+                    <span className="text-[#C0C0C0]/40 font-body text-[9px]">
+                      {alert.count} in a row
+                    </span>
+                  </div>
+                  <p className="text-[#C0C0C0] font-body text-[11px] mt-0.5">
+                    {alert.suggestion}
+                  </p>
+                </div>
+                <button
+                  onClick={() => dismissAlert(alert)}
+                  className="text-[#C0C0C0]/30 hover:text-[#C0C0C0]/60 flex-shrink-0"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              {/* Side bet quick-action */}
+              {!externalHistory && (
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    onClick={() => handleSideBet(alert)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 border border-[#D4AF37]/40 rounded text-[#D4AF37] font-body text-xs font-semibold transition-colors"
+                  >
+                    <DollarSign size={12} />
+                    Side Bet $5
+                  </button>
+                  <span className="text-[#C0C0C0]/30 font-body text-[9px]">
+                    Quick counter-bet
                   </span>
                 </div>
-                <p className="text-[#C0C0C0] font-body text-[11px] mt-0.5">
-                  {alert.suggestion}
-                </p>
-              </div>
-              <button
-                onClick={() => dismissAlert(alert)}
-                className="text-[#C0C0C0]/30 hover:text-[#C0C0C0]/60 flex-shrink-0"
-              >
-                <X size={14} />
-              </button>
+              )}
             </div>
           </motion.div>
         ))}
