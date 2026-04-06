@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { initSounds, playBallSpin } from "@/lib/sounds";
 
 /*
  * Design: "The Felt" — Skeuomorphic Realism
  * Splash screen with casino atmosphere, app title, and start button
  * Dark theme, gold accents, mahogany warmth
+ * Entrance animation: wheel spins with ball sound for ~2.5s before navigating
  */
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663491633720/DqUFf3ivoJ5Ydsv3tGRESy/casino-atmosphere-fQLpxLZZ9qDfoJR2GSzMkF.webp";
@@ -15,6 +17,8 @@ export default function Home() {
   const [, navigate] = useLocation();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [holdTimer, setHoldTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const soundInitRef = useRef(false);
 
   const handlePressStart = () => {
     const timer = setTimeout(() => {
@@ -30,6 +34,26 @@ export default function Home() {
     }
   };
 
+  const handleStartPlaying = () => {
+    if (isTransitioning) return;
+
+    // Initialize sounds on this first interaction
+    if (!soundInitRef.current) {
+      initSounds();
+      soundInitRef.current = true;
+    }
+
+    setIsTransitioning(true);
+
+    // Play ball spin sound for the entrance animation (~2.5s)
+    playBallSpin(2500);
+
+    // Navigate after the spin animation completes
+    setTimeout(() => {
+      navigate("/play");
+    }, 2800);
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-[#0d0d1a]">
       {/* Background image with overlay */}
@@ -39,29 +63,57 @@ export default function Home() {
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
 
+      {/* Fade-out overlay during transition */}
+      <AnimatePresence>
+        {isTransitioning && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 2.0, duration: 0.8 }}
+            className="fixed inset-0 bg-[#0d0d1a] z-50"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6">
         
-        {/* Wheel image */}
+        {/* Wheel image — spins during entrance transition */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8, rotate: -30 }}
-          animate={{ opacity: 1, scale: 1, rotate: 0 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
+          animate={
+            isTransitioning
+              ? { opacity: 1, scale: 1.15, rotate: 1080 }
+              : { opacity: 1, scale: 1, rotate: 0 }
+          }
+          transition={
+            isTransitioning
+              ? { duration: 2.5, ease: [0.25, 0.1, 0.25, 1], rotate: { duration: 2.5, ease: "easeInOut" } }
+              : { duration: 1.2, ease: "easeOut" }
+          }
           className="mb-6"
         >
           <img 
             src={WHEEL_IMAGE} 
             alt="Roulette Wheel" 
             className="w-48 h-48 sm:w-56 sm:h-56 rounded-full shadow-2xl border-4 border-[#D4AF37]/40"
-            style={{ filter: "drop-shadow(0 0 30px rgba(212,175,55,0.3))" }}
+            style={{ filter: `drop-shadow(0 0 ${isTransitioning ? '50px' : '30px'} rgba(212,175,55,${isTransitioning ? '0.6' : '0.3'}))` }}
           />
         </motion.div>
 
         {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.8 }}
+          animate={
+            isTransitioning
+              ? { opacity: 0, y: -20 }
+              : { opacity: 1, y: 0 }
+          }
+          transition={
+            isTransitioning
+              ? { duration: 0.6 }
+              : { delay: 0.4, duration: 0.8 }
+          }
           className="text-center mb-2"
         >
           <h1 
@@ -74,8 +126,16 @@ export default function Home() {
 
         <motion.p
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.8 }}
+          animate={
+            isTransitioning
+              ? { opacity: 0 }
+              : { opacity: 1 }
+          }
+          transition={
+            isTransitioning
+              ? { duration: 0.3 }
+              : { delay: 0.8, duration: 0.8 }
+          }
           className="font-body text-[#C0C0C0] text-base sm:text-lg tracking-wider mb-10 text-center"
         >
           Custom Roulette Simulator
@@ -84,10 +144,21 @@ export default function Home() {
         {/* Start button */}
         <motion.button
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2, duration: 0.6 }}
-          onClick={() => navigate("/play")}
-          className="px-12 py-4 bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-[#1a1a2e] font-display text-2xl tracking-[0.2em] rounded-lg shadow-xl hover:shadow-2xl transition-all active:scale-95"
+          animate={
+            isTransitioning
+              ? { opacity: 0, y: 20, scale: 0.9 }
+              : { opacity: 1, y: 0 }
+          }
+          transition={
+            isTransitioning
+              ? { duration: 0.4 }
+              : { delay: 1.2, duration: 0.6 }
+          }
+          onClick={handleStartPlaying}
+          disabled={isTransitioning}
+          className={`px-12 py-4 bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-[#1a1a2e] font-display text-2xl tracking-[0.2em] rounded-lg shadow-xl hover:shadow-2xl transition-all active:scale-95 ${
+            isTransitioning ? "pointer-events-none" : ""
+          }`}
           style={{ boxShadow: "0 4px 30px rgba(212,175,55,0.3)" }}
         >
           START PLAYING
@@ -96,8 +167,16 @@ export default function Home() {
         {/* Version & disclaimer trigger */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.8 }}
+          animate={
+            isTransitioning
+              ? { opacity: 0 }
+              : { opacity: 1 }
+          }
+          transition={
+            isTransitioning
+              ? { duration: 0.2 }
+              : { delay: 1.8 }
+          }
           className="mt-12 text-center"
         >
           <p className="text-[#C0C0C0]/30 font-body text-xs mb-1">v1.0</p>

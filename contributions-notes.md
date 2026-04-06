@@ -21,6 +21,11 @@
 17. Watch Mode speed control with animated wheel at each speed level
 18. Strategy Library with YouTube timestamp links back to source videos
 19. iPad Air as primary testing device
+20. Number strip / casino marquee scrolling display (modeled after Project Zero's sticky-last36)
+21. Entrance spin animation with sound when hitting Start Playing
+22. Specified single horizontal row, no wrapping, padded from edges, overflow hidden
+23. Strip placement above the betting table
+24. Contributions doc should only be finalized once at the very end
 
 ### Developer Contributions (Technical Implementation & Architecture)
 1. Full React/TypeScript application architecture

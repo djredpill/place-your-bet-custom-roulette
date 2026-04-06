@@ -3,6 +3,7 @@ import { GameProvider, useGame } from "@/contexts/GameContext";
 import RouletteBoard from "@/components/RouletteBoard";
 import RouletteWheel from "@/components/RouletteWheel";
 import SpinHistory from "@/components/SpinHistory";
+import NumberStrip from "@/components/NumberStrip";
 import PayoutChart from "@/components/PayoutChart";
 import StrategyLibrary from "@/components/StrategyLibrary";
 import SessionSetup from "@/components/SessionSetup";
@@ -438,6 +439,9 @@ function GameContent() {
 
           {/* History */}
           <SpinHistory />
+
+          {/* Number Strip — casino marquee display */}
+          <NumberStrip history={history} />
 
           {/* Board */}
           <RouletteBoard />

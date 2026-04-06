@@ -6,6 +6,7 @@ import {
   Target, Shuffle, Trophy, AlertTriangle,
 } from "lucide-react";
 import RouletteWheel from "./RouletteWheel";
+import NumberStrip from "./NumberStrip";
 import { useGame } from "@/contexts/GameContext";
 import { generateRandomNumber, getNumberColor, calculateWin, type Strategy, type SpinResult } from "@/lib/roulette-data";
 import { playBallSpin, playWinSound, playLossSound } from "@/lib/sounds";
@@ -506,25 +507,8 @@ export default function WatchModeEngine({
             </div>
           )}
 
-          {/* Recent results trail */}
-          {recentResults.length > 0 && (
-            <div className="bg-[#1a1a2e] border border-white/5 rounded-lg p-3">
-              <p className="text-[#C0C0C0]/40 font-body text-[9px] uppercase tracking-wider mb-2">Recent Spins</p>
-              <div className="flex flex-wrap gap-1.5">
-                {recentResults.slice(0, 15).map((r, i) => (
-                  <div
-                    key={i}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-numbers text-xs font-bold border ${
-                      r.color === "red" ? "bg-[#C41E23] border-[#C41E23]" :
-                      r.color === "black" ? "bg-[#1B1B1B] border-[#333]" : "bg-[#006400] border-[#006400]"
-                    } ${r.netResult > 0 ? "ring-1 ring-green-400" : ""}`}
-                  >
-                    {r.number}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Number Strip — casino marquee display */}
+          <NumberStrip history={recentResults} />
 
           {/* Exit condition indicator */}
           <div className="bg-black/20 border border-white/5 rounded-lg p-2 flex items-center gap-2">
